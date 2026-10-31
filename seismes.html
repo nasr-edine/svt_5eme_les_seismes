@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Examen blanc – Les séismes (5e)</title>
+<style>
+:root{--bg:#edf3ee;--ink:#17301f;--mut:#566b5c;--acc:#1f6f4a;--accl:#dcf1e4;--bad:#b42318;--badl:#fde8e6;--line:#cbd9cf}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:780px;margin:0 auto;padding:16px}h1{font-size:1.6rem;margin:.2em 0}h2{font-size:1.15rem;margin:0 0 .6em}
+.card{background:#fff;border:2px solid var(--line);border-radius:14px;padding:18px;margin:14px 0}.hide{display:none}.sub{color:var(--mut);font-size:.95rem}
+button{font:inherit;font-weight:600;background:var(--acc);color:#fff;border:0;border-radius:10px;padding:12px 22px;cursor:pointer}
+button.sec{background:#fff;color:var(--ink);border:2px solid var(--line)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #f59e0b;outline-offset:2px}
+input,select{font:inherit;border:2px solid var(--line);border-radius:8px;padding:8px 10px;max-width:100%}
+#bar{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;display:flex;justify-content:space-between;align-items:center;padding:10px 16px}
+#timer{font-size:1.5rem;font-weight:700;font-variant-numeric:tabular-nums}#timer.low{color:#fdba74}
+.q{padding:10px 0;border-top:1px solid var(--line)}.q:first-of-type{border-top:0}
+.fl{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}
+svg{max-width:100%;height:auto;background:#f6faf7;border:2px solid var(--line);border-radius:10px;margin:6px 0}
+.big{font-size:3rem;font-weight:800;line-height:1}.tip{background:var(--accl);border-radius:10px;padding:10px 14px;margin:8px 0}
+.warn{background:var(--badl);color:var(--bad);border-radius:10px;padding:8px 12px;font-size:.9rem}
+.r{padding:4px 8px;border-radius:6px;margin:3px 0;font-size:.95rem}.r.y{background:#e8f7ee}.r.n{background:var(--badl)}
+.lv{display:flex;align-items:center;gap:10px;margin:6px 0}.lv span:first-child{flex:0 0 250px;font-size:.95rem}.lv .t{flex:1;height:12px;background:var(--line);border-radius:6px}.lv .t i{display:block;height:100%;background:var(--acc);border-radius:6px}
+</style></head><body>
+<div id="bar" class="hide"><span>SVT – Les séismes</span><span id="timer">35:00</span></div>
+<main>
+<section id="home" class="card">
+  <h1>Examen blanc de SVT : les séismes</h1>
+  <p class="sub">5e · Structure interne de la Terre, origine d'un séisme, risque sismique · 35 minutes · 20 points</p>
+  <ul><li>Fais l'examen dans le calme, avec un brouillon, <b>sans cahier ni fiches</b>.</li>
+  <li>Lis bien les documents (schémas, graphique, tableau) : certaines réponses s'y trouvent.</li>
+  <li>Le chrono démarre au clic. À 0, l'examen est envoyé automatiquement.</li></ul>
+  <p><label>Prénom <input id="name" value="Anfal" autocomplete="off" style="width:150px"></label></p>
+  <p id="cfgwarn" class="warn hide">Google Sheet non configuré : les résultats restent sur cet appareil (voir SHEET_URL).</p>
+  <p><button id="go">Commencer l'examen</button></p>
+</section>
+<section id="exam" class="hide"><div id="qs"></div><p><button id="done">Terminer et envoyer</button></p></section>
+<section id="res" class="hide"></section>
+</main>
+<script>
+const SHEET_URL = "";            // URL Apps Script (…/exec)
+const TOKEN = "change-moi";
+const KEY = "seismes-v1", EVID = "svt-seismes-5e", MIN = 35;
+// ====== FIGURES ======
+const circ=(x,y,t)=>`<circle cx="${x}" cy="${y}" r="11" fill="#fff" stroke="#17301f"/><text x="${x}" y="${y+5}" text-anchor="middle" font-weight="700" font-size="14">${t}</text>`;
+const SCHEMA=`<svg viewBox="0 0 360 215" width="360" role="img" aria-label="Schéma d'un séisme"><rect y="60" width="360" height="155" fill="#d9c9a8"/><line x1="140" y1="215" x2="210" y2="100" stroke="#6b4b2a" stroke-width="5"/><line x1="190" y1="128" x2="190" y2="60" stroke="#333" stroke-dasharray="4 3"/><circle cx="190" cy="128" r="9" fill="#c0392b"/><circle cx="190" cy="128" r="28" fill="none" stroke="#c0392b" stroke-dasharray="5 4"/><circle cx="190" cy="128" r="48" fill="none" stroke="#c0392b" stroke-dasharray="5 4"/><circle cx="190" cy="60" r="5" fill="#2563eb"/><rect x="238" y="36" width="26" height="24" fill="#999"/><path d="M234 36l17-14 17 14z" fill="#777"/><path d="M262 38l-8 10 8 6" stroke="#b42318" stroke-width="3" fill="none"/>${circ(168,145,"A")}${circ(190,42,"B")}${circ(122,195,"C")}${circ(240,118,"D")}${circ(251,12,"E")}</svg>`;
+const TERRE=`<svg viewBox="0 0 320 225" width="320" role="img" aria-label="Schéma de la structure interne de la Terre (non à l'échelle)"><rect x="50" y="10" width="200" height="24" fill="#bdb7ab" stroke="#333"/><rect x="50" y="34" width="200" height="44" fill="#2f6f6b" stroke="#333"/><rect x="50" y="78" width="200" height="50" fill="#8cc7c0" stroke="#333"/><rect x="50" y="128" width="200" height="48" fill="#f59e0b" stroke="#333"/><rect x="50" y="176" width="200" height="40" fill="#fde68a" stroke="#333"/>${circ(280,22,1)}${circ(280,56,2)}${circ(280,103,3)}${circ(280,152,4)}${circ(280,196,5)}<text x="55" y="226" font-size="10" fill="#566b5c">Schéma non à l'échelle</text></svg>`;
+const GRAPH=`<svg viewBox="0 0 320 185" width="340" role="img" aria-label="Vitesse des ondes sismiques selon la profondeur"><g stroke="#999" fill="none"><path d="M40 10V150H300"/></g><polyline points="40,134 65,114 65,49 165,46 165,92 207,82 290,59" fill="none" stroke="#c0392b" stroke-width="2.5"/><g font-size="10" fill="#333" text-anchor="middle"><text x="40" y="164">0</text><text x="65" y="164">30</text><text x="165" y="164">150</text><text x="290" y="164">300</text><text x="170" y="180">Profondeur (km)</text></g><g font-size="10" fill="#333" text-anchor="end"><text x="35" y="153">5</text><text x="35" y="120">6</text><text x="35" y="88">7</text><text x="35" y="55">8</text><text x="35" y="23">9</text></g><text x="44" y="8" font-size="10">Vitesse des ondes (km/s)</text></svg>`;
+// ====== CONTENU ======
+const Q=(q,o,svg)=>({q,svg,f:[{t:"sel",o,a:o[0]}]});
+const S=(l,o,a,w)=>({t:"sel",l,o,a,w});
+const NOMS=["foyer","épicentre","faille","ondes sismiques","dégâts"],COUCHES=["croûte","manteau lithosphérique","manteau asthénosphérique","noyau externe (liquide)","noyau interne"];
+const NIV=["peu","moyen","fort"];
+const EXAM={secs:[
+{id:"A",t:"A. La structure interne de la Terre",tip:"Croûte : 0 à 30 km, granite (ondes à 5,5-6 km/s). Manteau lithosphérique : 30 à 150 km, péridotite rigide (7,8-8,2 km/s). Manteau asthénosphérique : 150 à 700 km, péridotite malléable (7,4-7,7 km/s). Puis noyau externe (liquide) et noyau interne. Une plaque tectonique = croûte + manteau lithosphérique (0 à 150 km), rigide. Un changement brusque de vitesse des ondes indique un changement de roche.",qs:[
+ {q:"<b>Exercice 1.</b> Légende le schéma de la structure interne de la Terre.",svg:TERRE,f:COUCHES.map((c,i)=>S(`${i+1} =`,COUCHES,c,.6))},
+ {q:"Associe chaque couche à sa roche.",f:[S("Croûte :",["granite","péridotite rigide","péridotite malléable"],"granite"),S("Manteau lithosphérique :",["granite","péridotite rigide","péridotite malléable"],"péridotite rigide"),S("Manteau asthénosphérique :",["granite","péridotite rigide","péridotite malléable"],"péridotite malléable")]},
+ {q:"<b>Exercice 2.</b> Le graphique montre la vitesse des ondes sismiques selon la profondeur. Dans le granite, les ondes vont à 5,5-6 km/s ; dans la péridotite rigide, à 7,8-8,2 km/s ; dans la péridotite malléable, à 7,4-7,7 km/s.",svg:GRAPH,f:[S("À 30 km de profondeur, la vitesse…",["augmente brusquement : on passe de la croûte au manteau lithosphérique","diminue brusquement","ne change pas"],"augmente brusquement : on passe de la croûte au manteau lithosphérique"),S("À 150 km de profondeur, la vitesse…",["diminue : on passe à la péridotite malléable de l'asthénosphère","augmente : on passe à la croûte","ne change pas"],"diminue : on passe à la péridotite malléable de l'asthénosphère"),S("Entre 30 et 150 km, la roche est…",["rigide (péridotite)","malléable (péridotite)","du granite"],"rigide (péridotite)")]},
+ Q("Une plaque tectonique (lithosphérique) est l'ensemble constitué…",["de la croûte et du manteau lithosphérique (0 à 150 km), rigide","du manteau asthénosphérique seul","de la croûte seule"]),
+ Q("Les plaques tectoniques « flottent » sur…",["l'asthénosphère malléable","le noyau interne","l'océan"]),
+ Q("Le noyau externe de la Terre est…",["liquide","solide","gazeux"])]},
+{id:"B",t:"B. L'origine d'un séisme",tip:"Les forces tectoniques s'exercent sur les roches rigides de la croûte et du manteau lithosphérique : elles finissent par se rompre brutalement, en général le long d'une faille. Cette rupture au foyer (en profondeur) produit des vibrations : les ondes sismiques, enregistrées par un sismographe (sismogramme). L'épicentre est à la surface, à la verticale du foyer : les dégâts y sont les plus importants.",qs:[
+ {q:"<b>Exercice 3.</b> Activité de modélisation : on casse un morceau de polystyrène avec les mains et on mesure les vibrations avec un téléphone. Qu'est-ce que chaque élément représente dans la réalité ?",f:[S("Les mains de l'élève :",["les forces tectoniques","les océans","un sismographe"],"les forces tectoniques"),S("Le polystyrène :",["les roches rigides de la lithosphère","l'asthénosphère malléable","le noyau"],"les roches rigides de la lithosphère"),S("Le téléphone avec l'application :",["un sismographe qui mesure les ondes","une faille","le foyer"],"un sismographe qui mesure les ondes")]},
+ Q("Quand les mains appuient de plus en plus sur le polystyrène…",["il finit par se casser brutalement et produit des vibrations","il fond","il reste intact"]),
+ Q("Comment et où débute un séisme ?",["Par une rupture brutale de roches en profondeur, le long d'une faille (au foyer)","Par une éruption à la surface","Par une tempête dans l'atmosphère"]),
+ Q("Les vibrations produites par la rupture s'appellent…",["des ondes sismiques","des ondes radio","des courants marins"]),
+ {q:"<b>Exercice 4.</b> Légende le schéma d'un séisme.",svg:SCHEMA,f:"ABCDE".split("").map((l,i)=>S(`${l} =`,NOMS,NOMS[i],.6))},
+ Q("Pourquoi les dégâts sont-ils les plus importants à l'épicentre ?",["C'est le point de la surface le plus proche du foyer : les ondes y arrivent avec le plus d'énergie","Les bâtiments y sont plus fragiles","Les ondes ne se propagent qu'en surface"]),
+ {q:"Les séismes se mesurent et s'enregistrent.",f:[S("L'instrument qui enregistre les séismes est…",["un sismographe (sismomètre)","un thermomètre","un baromètre"],"un sismographe (sismomètre)"),S("Le tracé obtenu s'appelle…",["un sismogramme","un schéma","un tableau"],"un sismogramme")]},
+ Q("Les ondes sismiques se propagent dans la roche à environ…",["10 km/s","10 m/s","1 km/h"])]},
+{id:"C",t:"C. Le risque sismique",tip:"La magnitude mesure l'énergie libérée par le séisme, mais le risque dépend aussi des enjeux : densité de population, solidité des constructions, prévention. Un séisme très fort loin de tout enjeu fait peu de dégâts ; un séisme moyen dans une zone dense et fragile peut faire beaucoup de victimes (risque = aléa + enjeux). Un séisme sous l'océan, de forte magnitude, peut provoquer un tsunami.",qs:[
+ Q("La magnitude d'un séisme mesure…",["l'énergie libérée par le séisme","le nombre de morts","la profondeur du foyer"]),
+ {q:"<b>Exercice 5.</b> Données : Japon (2011) : magnitude 9,0, 19 700 morts. Népal (2015) : 7,8, 9 000 morts. Maroc (2023) : 6,8, environ 2 946 morts. Grèce (2021) : 6,3, plusieurs dizaines de blessés. France-Monaco (2024) : 4,4, aucune victime. Donne le niveau de risque de chaque séisme.",f:[S("Japon :",NIV,"fort"),S("Maroc :",NIV,"moyen"),S("France-Monaco :",NIV,"peu")]},
+ Q("Classe du plus dangereux au moins dangereux :",["Japon, Népal, Maroc, Grèce, France","France, Grèce, Maroc, Népal, Japon","Maroc, Japon, Grèce, Népal, France"]),
+ Q("Quels paramètres influencent le risque sismique ?",["La magnitude, la densité de population et la solidité des constructions","Uniquement la saison","Uniquement la couleur du ciel"]),
+ Q("Un fort séisme a lieu dans une région totalement inhabitée. Le risque est…",["faible, car il n'y a presque aucun enjeu exposé","très élevé, car l'aléa est fort","impossible à évaluer"]),
+ Q("Dans quel cas un séisme peut-il provoquer un tsunami ?",["Séisme de forte magnitude sous l'océan, qui déplace une grande masse d'eau","Séisme à l'intérieur d'un continent","Séisme de faible magnitude très profond"])]}]};
+// ====== OUTILS ======
+const $=id=>document.getElementById(id);
+EXAM.F=[];EXAM.secs.forEach(s=>s.qs.forEach((q,qi)=>{q.id=s.id+(qi+1);q.f.forEach((f,fi)=>{f.id=q.id+(q.f.length>1?"."+(fi+1):"");f.sec=s.id;f.w=f.w||1;EXAM.F.push(f)})}));
+EXAM.SC=20/EXAM.F.reduce((a,f)=>a+f.w,0);
+const gradeF=(f,v)=>v&&v===f.a?f.w:0;
+const shuf=a=>a.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+const fmt=n=>(Math.round(n*10)/10).toString().replace(".",",");
+let S_=null,tick=null;
+const sv=()=>{try{localStorage.setItem(KEY,JSON.stringify(S_))}catch(e){}};
+async function send(p){p.token=TOKEN;if(!SHEET_URL)return false;
+ try{await fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify(p)});return true}
+ catch(e){const q=JSON.parse(localStorage.getItem(KEY+"-q")||"[]");q.push(p);localStorage.setItem(KEY+"-q",JSON.stringify(q));return false}}
+async function flush(){const q=JSON.parse(localStorage.getItem(KEY+"-q")||"[]");if(!q.length||!SHEET_URL)return;localStorage.removeItem(KEY+"-q");for(const p of q)await send(p)}
+function begin(){S_={name:$("name").value.trim()||"Anfal",start:Date.now(),ans:{},blurs:0,done:false};sv();send({type:"start",name:S_.name,at:new Date().toISOString(),app:EVID});run()}
+function run(){$("home").classList.add("hide");$("exam").classList.remove("hide");render();$("bar").classList.remove("hide");const D=MIN*60;
+ const u=()=>{const l=Math.max(0,D-Math.floor((Date.now()-S_.start)/1000));$("timer").textContent=String(Math.floor(l/60)).padStart(2,"0")+":"+String(l%60).padStart(2,"0");$("timer").classList.toggle("low",l<=300);if(l<=0){clearInterval(tick);finish(true)}};u();tick=setInterval(u,500)}
+const ctl=f=>{const v=S_.ans[f.id]||"";return`<select data-f="${f.id}"><option value="">— choisir —</option>${shuf(f.o).map(o=>`<option${o===v?" selected":""}>${o}</option>`).join("")}</select>`};
+function render(){let h="";EXAM.secs.forEach(s=>{h+=`<div class="card"><h2>${s.t}</h2>`;
+ s.qs.forEach(q=>{h+=`<div class="q"><div>${q.q}</div>${q.svg||""}`;q.f.forEach(f=>{h+=`<div class="fl">${f.l?`<span>${f.l}</span>`:""}${ctl(f)}</div>`});h+="</div>"});h+="</div>"});
+ $("qs").innerHTML=h;document.querySelectorAll("[data-f]").forEach(el=>el.addEventListener("input",()=>{S_.ans[el.dataset.f]=el.value;sv()}))}
+async function finish(auto){if(S_.done&&S_.result)return;S_.done=true;clearInterval(tick);
+ const dur=Math.min(MIN*60,Math.round((Date.now()-S_.start)/1000)),SC=EXAM.SC;
+ const det=EXAM.F.map(f=>({id:f.id,sec:f.sec,rep:S_.ans[f.id]||"",att:f.a,max:f.w*SC,pts:gradeF(f,S_.ans[f.id])*SC}));
+ const total=det.reduce((a,d)=>a+d.pts,0);S_.result={det,total,dur,auto:!!auto};sv();
+ const sent=await send({type:"svt",ev:EVID,name:S_.name,at:new Date().toISOString(),total,dur,auto:!!auto,blurs:S_.blurs,det});showRes(sent)}
+function band(n){if(n>=16)return["Excellent","Tu maîtrises très bien les séismes. Relis seulement tes petites erreurs."];
+ if(n>=12)return["Bon travail","Tu es au-dessus de la moyenne. Retravaille les parties signalées ci-dessous."];
+ if(n>=8)return["Presque là","Les bases sont là. Relis ton cours sur les parties signalées, puis refais l'examen."];
+ return["À reprendre","Reprends le cours partie par partie (schémas, activités 3 et 4), puis refais l'examen : tu progresseras vite."]}
+function showRes(sent){clearInterval(tick);["bar","home","exam"].forEach(i=>$(i).classList.add("hide"));$("res").classList.remove("hide");
+ const R=S_.result,[t,m]=band(R.total);
+ let h=`<div class="card"><p class="sub">${S_.name} · ${Math.floor(R.dur/60)} min ${R.dur%60} s${R.auto?" · temps écoulé":""}</p><div class="big">${fmt(R.total)} / 20</div><h2>${t}</h2><p>${m}</p>
+ <p class="sub">${sent?"Résultat envoyé.":SHEET_URL?"Envoi impossible : il sera renvoyé à la prochaine ouverture.":"Résultat enregistré sur cet appareil uniquement."}</p></div><div class="card"><h2>Par partie</h2>`;let tips="";
+ EXAM.secs.forEach(s=>{const d=R.det.filter(x=>x.sec===s.id),g=d.reduce((a,x)=>a+x.pts,0),mx=d.reduce((a,x)=>a+x.max,0),p=Math.round(g/mx*100);
+  h+=`<div class="lv"><span>${s.t}</span><span class="t"><i style="width:${p}%"></i></span><span>${p}%</span></div>`;if(p<60)tips+=`<div class="tip"><b>${s.t}</b><br>${s.tip}</div>`});
+ h+=`</div><div class="card"><h2>À retravailler</h2>${tips||"<p><b>Toutes les parties sont bien maîtrisées.</b></p>"}</div><div class="card"><h2>Correction</h2>`;
+ EXAM.secs.forEach(s=>{h+=`<p><b>${s.t}</b></p>`;s.qs.forEach(q=>q.f.forEach(f=>{const d=R.det.find(x=>x.id===f.id),ok=d.pts>=d.max-1e-9,lab=(f.l?q.q.replace(/<[^>]+>/g,"").slice(0,40)+" – "+f.l:q.q.replace(/<[^>]+>/g,"").slice(0,90));
+  h+=`<div class="r ${ok?"y":"n"}">${ok?"✓":"✗"} ${lab}${ok?"":` — ta réponse : <i>${d.rep||"—"}</i> · attendu : <b>${d.att}</b>`}</div>`}))});
+ h+=`</div><p><button class="sec" id="again">Refaire l'examen</button></p>`;$("res").innerHTML=h;
+ $("again").onclick=()=>{if(confirm("Effacer cet essai et recommencer ?")){localStorage.removeItem(KEY);location.reload()}}}
+$("go").onclick=begin;
+$("done").onclick=()=>{if(confirm("Terminer et envoyer l'examen ?"))finish(false)};
+if(!SHEET_URL)$("cfgwarn").classList.remove("hide");
+document.addEventListener("visibilitychange",()=>{if(S_&&!S_.done&&document.hidden){S_.blurs++;sv()}});
+flush();
+try{S_=JSON.parse(localStorage.getItem(KEY))}catch(e){S_=null}
+if(S_){S_.blurs=S_.blurs||0;if(S_.done&&S_.result)showRes(true);else if(S_.done)finish(true);else run()}
+</script></body></html>
